@@ -1,6 +1,9 @@
-import { Profile } from '@/types/profile';
-import { Youtube, Share2, MoreVertical } from 'lucide-react';
+import { Profile, detectPlatform, extractTwitchUsername } from '@/types/profile';
+import { Share2, MoreVertical, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PlatformIcon from './PlatformIcon';
+import { useTwitchLive } from '@/hooks/useTwitchLive';
+import { useMemo, useEffect } from 'react';
 
 interface ProfilePreviewProps {
   profile: Profile;
@@ -9,6 +12,36 @@ interface ProfilePreviewProps {
 
 const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) => {
   const { theme, links, featuredVideo } = profile;
+
+  // Extract Twitch usernames from links
+  const twitchUsernames = useMemo(() => {
+    return links
+      .filter(link => link.enabled && detectPlatform(link.url) === 'twitch')
+      .map(link => extractTwitchUsername(link.url))
+      .filter((username): username is string => username !== null);
+  }, [links]);
+
+  const { liveStatus } = useTwitchLive(twitchUsernames);
+
+  // Inject custom font if provided
+  useEffect(() => {
+    if (theme.customFontUrl) {
+      const existingLink = document.getElementById('custom-profile-font');
+      if (existingLink) {
+        existingLink.remove();
+      }
+      
+      const link = document.createElement('link');
+      link.id = 'custom-profile-font';
+      link.rel = 'stylesheet';
+      link.href = theme.customFontUrl;
+      document.head.appendChild(link);
+      
+      return () => {
+        link.remove();
+      };
+    }
+  }, [theme.customFontUrl]);
 
   const getButtonRadius = () => {
     switch (theme.buttonStyle) {
@@ -43,6 +76,38 @@ const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) =
       return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
     }
     return '';
+  };
+
+  const getBadgeStyle = (link: typeof links[0]) => {
+    if (link.badge === 'CUSTOM' && link.customBadge) {
+      return {
+        backgroundColor: link.customBadge.backgroundColor,
+        color: link.customBadge.textColor,
+      };
+    }
+    
+    switch (link.badge) {
+      case 'NEW':
+        return { backgroundColor: '#22c55e', color: '#ffffff' };
+      case 'HOT':
+        return { backgroundColor: '#f97316', color: '#ffffff' };
+      case 'SALE':
+        return { backgroundColor: '#ef4444', color: '#ffffff' };
+      default:
+        return {};
+    }
+  };
+
+  const getBadgeText = (link: typeof links[0]) => {
+    if (link.badge === 'CUSTOM' && link.customBadge) {
+      return link.customBadge.text;
+    }
+    return link.badge;
+  };
+
+  const isLinkTwitchLive = (url: string): boolean => {
+    const username = extractTwitchUsername(url);
+    return username ? liveStatus[username.toLowerCase()] === true : false;
   };
 
   return (
@@ -117,8 +182,8 @@ const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) =
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{featuredVideo.title}</p>
                   <div className="flex items-center gap-1 text-xs opacity-70 mt-0.5">
-                    <Youtube size={12} />
-                    <span>YouTube</span>
+                    <PlatformIcon platform={featuredVideo.platform} size={12} />
+                    <span className="capitalize">{featuredVideo.platform}</span>
                   </div>
                 </div>
                 <button className="p-1 opacity-50 hover:opacity-100">
@@ -129,43 +194,92 @@ const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) =
           )}
 
           {/* Regular Links */}
-          {enabledLinks.map((link, index) => (
-            <motion.a
-              key={link.id}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 + (index + 1) * 0.05 }}
-              className="flex items-center gap-3 p-3 transition-transform hover:scale-[1.02] relative"
-              style={cardStyle}
-            >
-              {link.thumbnail && (
-                <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={link.thumbnail} alt={link.title} className="w-full h-full object-cover" />
+          {enabledLinks.map((link, index) => {
+            const platform = detectPlatform(link.url);
+            const isTwitchLive = platform === 'twitch' && isLinkTwitchLive(link.url);
+            const isFeatured = link.isFeatured;
+
+            return (
+              <motion.a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ 
+                  y: 0, 
+                  opacity: 1,
+                  scale: isFeatured ? [1, 1.02, 1] : 1,
+                }}
+                transition={{ 
+                  delay: 0.3 + (index + 1) * 0.05,
+                  scale: isFeatured ? {
+                    repeat: Infinity,
+                    duration: 2,
+                    ease: "easeInOut"
+                  } : undefined
+                }}
+                className={`flex items-center gap-3 p-3 transition-all hover:scale-[1.02] relative ${
+                  isFeatured ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/20' : ''
+                }`}
+                style={{
+                  ...cardStyle,
+                  boxShadow: isFeatured 
+                    ? '0 0 20px rgba(var(--primary), 0.3), 0 0 40px rgba(var(--primary), 0.1)' 
+                    : undefined
+                }}
+              >
+                {/* Platform Icon */}
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/10">
+                  {link.thumbnail ? (
+                    <img src={link.thumbnail} alt={link.title} className="w-full h-full object-cover rounded-lg" />
+                  ) : (
+                    <PlatformIcon platform={platform} size={20} />
+                  )}
                 </div>
-              )}
-              
-              <span className="flex-1 text-center font-medium text-sm">
-                {link.title}
-              </span>
-
-              {link.badge && (
-                <span className={`absolute -top-1 -right-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  link.badge === 'NEW' ? 'bg-green-500 text-white' :
-                  link.badge === 'HOT' ? 'bg-orange-500 text-white' :
-                  'bg-red-500 text-white'
-                }`}>
-                  {link.badge}
+                
+                <span className="flex-1 text-center font-medium text-sm">
+                  {link.title}
                 </span>
-              )}
 
-              <button className="p-1 opacity-50 hover:opacity-100">
-                <MoreVertical size={16} />
-              </button>
-            </motion.a>
-          ))}
+                {/* Twitch Live Indicator */}
+                {isTwitchLive && (
+                  <div className="absolute -top-1 -left-1 flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                    <Radio size={10} className="animate-pulse" />
+                    LIVE
+                  </div>
+                )}
+
+                {/* Badge */}
+                {link.badge && (
+                  <span 
+                    className="absolute -top-1 -right-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={getBadgeStyle(link)}
+                  >
+                    {getBadgeText(link)}
+                  </span>
+                )}
+
+                {/* Featured Glow Effect */}
+                {isFeatured && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                      borderRadius: getButtonRadius(),
+                    }}
+                  />
+                )}
+
+                <button className="p-1 opacity-50 hover:opacity-100">
+                  <MoreVertical size={16} />
+                </button>
+              </motion.a>
+            );
+          })}
         </div>
 
         {/* Footer */}
