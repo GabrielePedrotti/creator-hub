@@ -1,3 +1,9 @@
+export interface CustomBadge {
+  text: string;
+  backgroundColor: string;
+  textColor: string;
+}
+
 export interface ProfileLink {
   id: string;
   title: string;
@@ -5,7 +11,8 @@ export interface ProfileLink {
   thumbnail?: string;
   enabled: boolean;
   isFeatured?: boolean;
-  badge?: 'NEW' | 'HOT' | 'SALE' | null;
+  badge?: 'NEW' | 'HOT' | 'SALE' | 'CUSTOM' | null;
+  customBadge?: CustomBadge;
 }
 
 export interface ProfileTheme {
@@ -19,6 +26,7 @@ export interface ProfileTheme {
   textColor: string;
   buttonStyle: 'rounded' | 'pill' | 'square';
   fontFamily: string;
+  customFontUrl?: string;
   isCustom?: boolean;
 }
 
@@ -36,6 +44,44 @@ export interface Profile {
     platform: 'youtube' | 'twitch' | 'tiktok';
   };
 }
+
+// Platform detection helper
+export const detectPlatform = (url: string): string | null => {
+  const platforms: { [key: string]: RegExp } = {
+    youtube: /youtube\.com|youtu\.be/i,
+    twitch: /twitch\.tv/i,
+    instagram: /instagram\.com/i,
+    tiktok: /tiktok\.com/i,
+    twitter: /twitter\.com|x\.com/i,
+    discord: /discord\.gg|discord\.com/i,
+    spotify: /spotify\.com/i,
+    soundcloud: /soundcloud\.com/i,
+    github: /github\.com/i,
+    linkedin: /linkedin\.com/i,
+    facebook: /facebook\.com/i,
+    snapchat: /snapchat\.com/i,
+    pinterest: /pinterest\.com/i,
+    reddit: /reddit\.com/i,
+    telegram: /t\.me|telegram\.me/i,
+    whatsapp: /wa\.me|whatsapp\.com/i,
+    patreon: /patreon\.com/i,
+    kofi: /ko-fi\.com/i,
+    onlyfans: /onlyfans\.com/i,
+    threads: /threads\.net/i,
+    bluesky: /bsky\.app/i,
+  };
+
+  for (const [platform, regex] of Object.entries(platforms)) {
+    if (regex.test(url)) return platform;
+  }
+  return null;
+};
+
+// Extract Twitch username from URL
+export const extractTwitchUsername = (url: string): string | null => {
+  const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+  return match ? match[1] : null;
+};
 
 export const presetThemes: ProfileTheme[] = [
   {
