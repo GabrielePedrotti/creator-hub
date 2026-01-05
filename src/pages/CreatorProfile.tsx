@@ -9,7 +9,7 @@ import { useMemo, useEffect } from "react";
 
 // API fetch function - replace with your actual API endpoint
 const fetchCreatorProfile = async (id: string): Promise<Profile> => {
-  const response = await fetch(`https://api.crewmaster.net/getCreatorLinks/${id}`);
+  const response = await fetch(`https://api.crewmaster.net/v2/getCreatorLinks/${id}`);
   if (!response.ok) {
     throw new Error("Profile not found");
   }
