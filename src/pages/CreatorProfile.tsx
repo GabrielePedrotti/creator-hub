@@ -1,17 +1,17 @@
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Profile, detectPlatform, extractTwitchUsername } from '@/types/profile';
-import { Share2, MoreVertical, Radio, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import PlatformIcon from '@/components/profile/PlatformIcon';
-import { useTwitchLive } from '@/hooks/useTwitchLive';
-import { useMemo, useEffect } from 'react';
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Profile, detectPlatform, extractTwitchUsername } from "@/types/profile";
+import { Share2, MoreVertical, Radio, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import PlatformIcon from "@/components/profile/PlatformIcon";
+import { useTwitchLive } from "@/hooks/useTwitchLive";
+import { useMemo, useEffect } from "react";
 
 // API fetch function - replace with your actual API endpoint
 const fetchCreatorProfile = async (id: string): Promise<Profile> => {
-  const response = await fetch(`/api/creators/${id}`);
+  const response = await fetch(`https://api.crewmaster.net/getCreatorLinks/${id}`);
   if (!response.ok) {
-    throw new Error('Profile not found');
+    throw new Error("Profile not found");
   }
   return response.json();
 };
@@ -19,8 +19,12 @@ const fetchCreatorProfile = async (id: string): Promise<Profile> => {
 const CreatorProfile = () => {
   const { id } = useParams<{ id: string }>();
 
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['creator-profile', id],
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["creator-profile", id],
     queryFn: () => fetchCreatorProfile(id!),
     enabled: !!id,
     retry: 1,
@@ -30,8 +34,8 @@ const CreatorProfile = () => {
   const twitchUsernames = useMemo(() => {
     if (!profile?.links) return [];
     return profile.links
-      .filter(link => link.enabled && detectPlatform(link.url) === 'twitch')
-      .map(link => extractTwitchUsername(link.url))
+      .filter((link) => link.enabled && detectPlatform(link.url) === "twitch")
+      .map((link) => extractTwitchUsername(link.url))
       .filter((username): username is string => username !== null);
   }, [profile?.links]);
 
@@ -40,17 +44,17 @@ const CreatorProfile = () => {
   // Inject custom font if provided
   useEffect(() => {
     if (profile?.theme.customFontUrl) {
-      const existingLink = document.getElementById('custom-profile-font');
+      const existingLink = document.getElementById("custom-profile-font");
       if (existingLink) {
         existingLink.remove();
       }
-      
-      const link = document.createElement('link');
-      link.id = 'custom-profile-font';
-      link.rel = 'stylesheet';
+
+      const link = document.createElement("link");
+      link.id = "custom-profile-font";
+      link.rel = "stylesheet";
       link.href = profile.theme.customFontUrl;
       document.head.appendChild(link);
-      
+
       return () => {
         link.remove();
       };
@@ -63,7 +67,7 @@ const CreatorProfile = () => {
       document.title = `${profile.displayName} (@${profile.username}) | LinkPulse`;
     }
     return () => {
-      document.title = 'LinkPulse';
+      document.title = "LinkPulse";
     };
   }, [profile]);
 
@@ -83,9 +87,11 @@ const CreatorProfile = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center px-6">
           <h1 className="text-4xl font-bold text-foreground mb-4">Profile Not Found</h1>
-          <p className="text-muted-foreground mb-8">The creator you're looking for doesn't exist or the link is invalid.</p>
-          <a 
-            href="/" 
+          <p className="text-muted-foreground mb-8">
+            The creator you're looking for doesn't exist or the link is invalid.
+          </p>
+          <a
+            href="/"
             className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:opacity-90 transition-opacity"
           >
             Go to Homepage
@@ -99,9 +105,12 @@ const CreatorProfile = () => {
 
   const getButtonRadius = () => {
     switch (theme.buttonStyle) {
-      case 'pill': return '9999px';
-      case 'square': return '4px';
-      default: return '12px';
+      case "pill":
+        return "9999px";
+      case "square":
+        return "4px";
+      default:
+        return "12px";
     }
   };
 
@@ -109,12 +118,12 @@ const CreatorProfile = () => {
     backgroundColor: theme.backgroundColor,
     background: theme.backgroundGradient || theme.backgroundColor,
     backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundAttachment: 'fixed',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
     color: theme.textColor,
     fontFamily: theme.fontFamily,
-    minHeight: '100vh',
+    minHeight: "100vh",
   };
 
   const cardStyle: React.CSSProperties = {
@@ -123,38 +132,38 @@ const CreatorProfile = () => {
     borderRadius: getButtonRadius(),
   };
 
-  const enabledLinks = links.filter(link => link.enabled);
+  const enabledLinks = links.filter((link) => link.enabled);
 
   const extractYouTubeThumbnail = (url: string): string => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (match) {
       return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
     }
-    return '';
+    return "";
   };
 
-  const getBadgeStyle = (link: typeof links[0]) => {
-    if (link.badge === 'CUSTOM' && link.customBadge) {
+  const getBadgeStyle = (link: (typeof links)[0]) => {
+    if (link.badge === "CUSTOM" && link.customBadge) {
       return {
         backgroundColor: link.customBadge.backgroundColor,
         color: link.customBadge.textColor,
       };
     }
-    
+
     switch (link.badge) {
-      case 'NEW':
-        return { backgroundColor: '#22c55e', color: '#ffffff' };
-      case 'HOT':
-        return { backgroundColor: '#f97316', color: '#ffffff' };
-      case 'SALE':
-        return { backgroundColor: '#ef4444', color: '#ffffff' };
+      case "NEW":
+        return { backgroundColor: "#22c55e", color: "#ffffff" };
+      case "HOT":
+        return { backgroundColor: "#f97316", color: "#ffffff" };
+      case "SALE":
+        return { backgroundColor: "#ef4444", color: "#ffffff" };
       default:
         return {};
     }
   };
 
-  const getBadgeText = (link: typeof links[0]) => {
-    if (link.badge === 'CUSTOM' && link.customBadge) {
+  const getBadgeText = (link: (typeof links)[0]) => {
+    if (link.badge === "CUSTOM" && link.customBadge) {
       return link.customBadge.text;
     }
     return link.badge;
@@ -178,7 +187,7 @@ const CreatorProfile = () => {
         // You could add a toast notification here
       }
     } catch (err) {
-      console.error('Share failed:', err);
+      console.error("Share failed:", err);
     }
   };
 
@@ -189,7 +198,7 @@ const CreatorProfile = () => {
         <div className="w-10 h-10 flex items-center justify-center opacity-70">
           <span className="text-xl">✦</span>
         </div>
-        <button 
+        <button
           onClick={handleShare}
           className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
         >
@@ -199,28 +208,24 @@ const CreatorProfile = () => {
 
       {/* Profile Header */}
       <div className="flex flex-col items-center px-6 pb-8 max-w-lg mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="w-28 h-28 rounded-full overflow-hidden mb-5 ring-4 ring-white/20 shadow-2xl"
         >
           {profile.avatar ? (
-            <img 
-              src={profile.avatar} 
-              alt={profile.displayName} 
-              className="w-full h-full object-cover" 
-            />
+            <img src={profile.avatar} alt={profile.displayName} className="w-full h-full object-cover" />
           ) : (
-            <div 
+            <div
               className="w-full h-full flex items-center justify-center text-3xl font-bold"
-              style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+              style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
             >
               {profile.displayName.charAt(0).toUpperCase()}
             </div>
           )}
         </motion.div>
-        
-        <motion.h1 
+
+        <motion.h1
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
@@ -228,9 +233,9 @@ const CreatorProfile = () => {
         >
           @{profile.username}
         </motion.h1>
-        
+
         {profile.displayName && profile.displayName !== profile.username && (
-          <motion.p 
+          <motion.p
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
@@ -239,8 +244,8 @@ const CreatorProfile = () => {
             {profile.displayName}
           </motion.p>
         )}
-        
-        <motion.p 
+
+        <motion.p
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -266,8 +271,8 @@ const CreatorProfile = () => {
           >
             <div className="flex items-center gap-4 p-4">
               <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
-                <img 
-                  src={featuredVideo.thumbnail || extractYouTubeThumbnail(featuredVideo.url)} 
+                <img
+                  src={featuredVideo.thumbnail || extractYouTubeThumbnail(featuredVideo.url)}
                   alt={featuredVideo.title}
                   className="w-full h-full object-cover"
                 />
@@ -289,7 +294,7 @@ const CreatorProfile = () => {
         {/* Regular Links */}
         {enabledLinks.map((link, index) => {
           const platform = detectPlatform(link.url);
-          const isTwitchLive = platform === 'twitch' && isLinkTwitchLive(link.url);
+          const isTwitchLive = platform === "twitch" && isLinkTwitchLive(link.url);
           const isFeatured = link.isFeatured;
 
           return (
@@ -299,27 +304,27 @@ const CreatorProfile = () => {
               target="_blank"
               rel="noopener noreferrer"
               initial={{ y: 20, opacity: 0 }}
-              animate={{ 
-                y: 0, 
+              animate={{
+                y: 0,
                 opacity: 1,
                 scale: isFeatured ? [1, 1.02, 1] : 1,
               }}
-              transition={{ 
+              transition={{
                 delay: 0.3 + (index + 1) * 0.05,
-                scale: isFeatured ? {
-                  repeat: Infinity,
-                  duration: 2,
-                  ease: "easeInOut"
-                } : undefined
+                scale: isFeatured
+                  ? {
+                      repeat: Infinity,
+                      duration: 2,
+                      ease: "easeInOut",
+                    }
+                  : undefined,
               }}
               className={`flex items-center gap-4 p-4 transition-all hover:scale-[1.02] relative ${
-                isFeatured ? 'ring-2 ring-white/30 shadow-2xl' : 'shadow-lg'
+                isFeatured ? "ring-2 ring-white/30 shadow-2xl" : "shadow-lg"
               }`}
               style={{
                 ...cardStyle,
-                boxShadow: isFeatured 
-                  ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(255,255,255,0.1)' 
-                  : undefined
+                boxShadow: isFeatured ? "0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(255,255,255,0.1)" : undefined,
               }}
             >
               {/* Platform Icon */}
@@ -330,10 +335,8 @@ const CreatorProfile = () => {
                   <PlatformIcon platform={platform} size={24} />
                 )}
               </div>
-              
-              <span className="flex-1 text-center font-semibold text-base">
-                {link.title}
-              </span>
+
+              <span className="flex-1 text-center font-semibold text-base">{link.title}</span>
 
               {/* Twitch Live Indicator */}
               {isTwitchLive && (
@@ -345,7 +348,7 @@ const CreatorProfile = () => {
 
               {/* Badge */}
               {link.badge && (
-                <span 
+                <span
                   className="absolute -top-2 -right-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-md"
                   style={getBadgeStyle(link)}
                 >
@@ -361,7 +364,7 @@ const CreatorProfile = () => {
                   animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                   style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+                    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
                     borderRadius: getButtonRadius(),
                   }}
                 />
@@ -377,20 +380,26 @@ const CreatorProfile = () => {
 
       {/* Footer */}
       <div className="mt-12 flex flex-col items-center gap-6 px-4 max-w-lg mx-auto">
-        <a 
+        <a
           href="/"
           className="px-8 py-3 text-sm font-semibold border-2 rounded-full opacity-90 hover:opacity-100 transition-opacity backdrop-blur-sm bg-white/5"
           style={{ borderColor: theme.textColor }}
         >
           Crea la tua pagina su LinkPulse
         </a>
-        
+
         <div className="flex items-center gap-4 text-xs opacity-50">
-          <a href="/privacy" className="hover:opacity-80 transition-opacity">Privacy</a>
+          <a href="/privacy" className="hover:opacity-80 transition-opacity">
+            Privacy
+          </a>
           <span>•</span>
-          <a href="/terms" className="hover:opacity-80 transition-opacity">Termini</a>
+          <a href="/terms" className="hover:opacity-80 transition-opacity">
+            Termini
+          </a>
           <span>•</span>
-          <a href="/report" className="hover:opacity-80 transition-opacity">Segnala</a>
+          <a href="/report" className="hover:opacity-80 transition-opacity">
+            Segnala
+          </a>
         </div>
 
         {/* LinkPulse Branding */}
