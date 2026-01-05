@@ -7,13 +7,91 @@ import PlatformIcon from "@/components/profile/PlatformIcon";
 import { useTwitchLive } from "@/hooks/useTwitchLive";
 import { useMemo, useEffect } from "react";
 
-// API fetch function - replace with your actual API endpoint
+// API response type (matches your backend structure)
+interface APIResponse {
+  username: string;
+  displayName: string;
+  bio: string;
+  avatar: string;
+  theme: {
+    backgroundColor: string;
+    backgroundGradient?: string;
+    backgroundImage?: string;
+    buttonStyle: string;
+    cardColor: string;
+    cardTextColor: string;
+    textColor: string;
+    fontFamily: string;
+    customFontUrl?: string;
+  };
+  links: Array<{
+    id: string;
+    title: string;
+    url: string;
+    thumbnail?: string;
+    enabled: boolean;
+    isFeatured?: boolean;
+    badge?: string;
+    customBadge?: {
+      text: string;
+      backgroundColor: string;
+      textColor: string;
+    };
+  }>;
+  featuredVideo?: {
+    url: string;
+    title: string;
+    thumbnail: string;
+    platform: string;
+  };
+}
+
+// Transform API response to Profile type
+const transformAPIResponse = (data: APIResponse): Profile => ({
+  username: data.username,
+  displayName: data.displayName,
+  bio: data.bio,
+  avatar: data.avatar,
+  theme: {
+    id: 'custom',
+    name: 'Custom',
+    backgroundColor: data.theme.backgroundColor,
+    backgroundGradient: data.theme.backgroundGradient,
+    backgroundImage: data.theme.backgroundImage,
+    cardColor: data.theme.cardColor,
+    cardTextColor: data.theme.cardTextColor,
+    textColor: data.theme.textColor,
+    buttonStyle: (data.theme.buttonStyle as 'rounded' | 'pill' | 'square') || 'rounded',
+    fontFamily: data.theme.fontFamily || 'system-ui',
+    customFontUrl: data.theme.customFontUrl,
+    isCustom: true,
+  },
+  links: data.links.map((link) => ({
+    id: link.id,
+    title: link.title,
+    url: link.url,
+    thumbnail: link.thumbnail,
+    enabled: link.enabled,
+    isFeatured: link.isFeatured,
+    badge: link.badge as 'NEW' | 'HOT' | 'SALE' | 'CUSTOM' | null | undefined,
+    customBadge: link.customBadge,
+  })),
+  featuredVideo: data.featuredVideo ? {
+    url: data.featuredVideo.url,
+    title: data.featuredVideo.title,
+    thumbnail: data.featuredVideo.thumbnail,
+    platform: data.featuredVideo.platform as 'youtube' | 'twitch' | 'tiktok',
+  } : undefined,
+});
+
+// API fetch function
 const fetchCreatorProfile = async (id: string): Promise<Profile> => {
   const response = await fetch(`https://api.crewmaster.net/v2/getCreatorLinks/${id}`);
   if (!response.ok) {
     throw new Error("Profile not found");
   }
-  return response.json();
+  const data: APIResponse = await response.json();
+  return transformAPIResponse(data);
 };
 
 const CreatorProfile = () => {
