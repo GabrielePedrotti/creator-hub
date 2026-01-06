@@ -76,7 +76,7 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
     badge: link.badge as 'NEW' | 'HOT' | 'SALE' | 'CUSTOM' | null | undefined,
     customBadge: link.customBadge,
   })),
-  featuredVideo: data.featuredVideo ? {
+  featuredVideo: data.featuredVideo && data.featuredVideo.url ? {
     url: data.featuredVideo.url,
     title: data.featuredVideo.title,
     thumbnail: data.featuredVideo.thumbnail,
