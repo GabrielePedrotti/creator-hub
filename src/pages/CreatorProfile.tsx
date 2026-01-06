@@ -194,8 +194,9 @@ const CreatorProfile = () => {
 
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.backgroundColor,
-    background: theme.backgroundGradient || theme.backgroundColor,
-    backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
+    backgroundImage: theme.backgroundImage 
+      ? `url(${theme.backgroundImage})` 
+      : theme.backgroundGradient || undefined,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
