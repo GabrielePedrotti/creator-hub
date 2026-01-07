@@ -214,6 +214,7 @@ const CreatorProfile = () => {
     backgroundColor: theme.cardColor,
     color: theme.cardTextColor,
     borderRadius: getButtonRadius(),
+    fontFamily: fontFamilyStyle,
   };
 
   const enabledLinks = links.filter((link) => link.enabled);
