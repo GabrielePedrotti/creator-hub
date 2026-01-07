@@ -53,16 +53,16 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
   bio: data.bio,
   avatar: data.avatar,
   theme: {
-    id: 'custom',
-    name: 'Custom',
+    id: "custom",
+    name: "Custom",
     backgroundColor: data.theme.backgroundColor,
     backgroundGradient: data.theme.backgroundGradient,
     backgroundImage: data.theme.backgroundImage,
     cardColor: data.theme.cardColor,
     cardTextColor: data.theme.cardTextColor,
     textColor: data.theme.textColor,
-    buttonStyle: (data.theme.buttonStyle as 'rounded' | 'pill' | 'square') || 'rounded',
-    fontFamily: data.theme.fontFamily || 'system-ui',
+    buttonStyle: (data.theme.buttonStyle as "rounded" | "pill" | "square") || "rounded",
+    fontFamily: data.theme.fontFamily || "system-ui",
     customFontUrl: data.theme.customFontUrl,
     isCustom: true,
   },
@@ -73,15 +73,18 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
     thumbnail: link.thumbnail,
     enabled: link.enabled,
     isFeatured: link.isFeatured,
-    badge: link.badge as 'NEW' | 'HOT' | 'SALE' | 'CUSTOM' | null | undefined,
+    badge: link.badge as "NEW" | "HOT" | "SALE" | "CUSTOM" | null | undefined,
     customBadge: link.customBadge,
   })),
-  featuredVideo: data.featuredVideo && data.featuredVideo.url ? {
-    url: data.featuredVideo.url,
-    title: data.featuredVideo.title,
-    thumbnail: data.featuredVideo.thumbnail,
-    platform: data.featuredVideo.platform as 'youtube' | 'twitch' | 'tiktok',
-  } : undefined,
+  featuredVideo:
+    data.featuredVideo && data.featuredVideo.url
+      ? {
+          url: data.featuredVideo.url,
+          title: data.featuredVideo.title,
+          thumbnail: data.featuredVideo.thumbnail,
+          platform: data.featuredVideo.platform as "youtube" | "twitch" | "tiktok",
+        }
+      : undefined,
 });
 
 // API fetch function
@@ -153,13 +156,9 @@ const CreatorProfile = () => {
   useEffect(() => {
     if (!profile) return;
 
-    const container = document.querySelector(
-      "[data-creator-profile-container]"
-    ) as HTMLElement | null;
+    const container = document.querySelector("[data-creator-profile-container]") as HTMLElement | null;
 
-    const cssHeadingVar = container
-      ? getComputedStyle(container).getPropertyValue("--font-heading")
-      : null;
+    const cssHeadingVar = container ? getComputedStyle(container).getPropertyValue("--font-heading") : null;
 
     const h1 = container?.querySelector("h1") as HTMLElement | null;
     const h1Font = h1 ? getComputedStyle(h1).fontFamily : null;
@@ -218,9 +217,7 @@ const CreatorProfile = () => {
   // Build font family string
   // - If API sends a generic family keyword (e.g. "monospace"), don't quote it.
   // - If it's a named font with spaces (e.g. "Playfair Display"), quote it.
-  const cleanFontFamily = theme.fontFamily
-    ? theme.fontFamily.replace(/["']/g, "").split(",")[0].trim()
-    : null;
+  const cleanFontFamily = theme.fontFamily ? theme.fontFamily.replace(/["']/g, "").split(",")[0].trim() : null;
 
   const GENERIC_FAMILIES = new Set([
     "serif",
@@ -248,11 +245,9 @@ const CreatorProfile = () => {
 
   const fontFamilyStyle = baseFont ? `${baseFont}, system-ui, sans-serif` : "system-ui, sans-serif";
 
-  const containerStyle: (React.CSSProperties & Record<string, string>) = {
+  const containerStyle: React.CSSProperties & Record<string, string> = {
     backgroundColor: theme.backgroundColor,
-    backgroundImage: theme.backgroundImage
-      ? `url(${theme.backgroundImage})`
-      : theme.backgroundGradient || undefined,
+    backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : theme.backgroundGradient || undefined,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
@@ -545,7 +540,7 @@ const CreatorProfile = () => {
 
         {/* LinkPulse Branding */}
         <div className="flex items-center gap-2 opacity-40">
-          <img src = "https://cdn.crewmaster.net/brand/Full-No-bg.png">
+          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.png" alt="LinkPulse" className="h-6 object-contain" />
         </div>
       </div>
     </div>
