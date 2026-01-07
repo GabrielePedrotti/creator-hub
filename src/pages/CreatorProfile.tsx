@@ -149,6 +149,29 @@ const CreatorProfile = () => {
     };
   }, [profile]);
 
+  // Debug: verify which font is actually applied (will show in console)
+  useEffect(() => {
+    if (!profile) return;
+
+    const container = document.querySelector(
+      "[data-creator-profile-container]"
+    ) as HTMLElement | null;
+
+    const cssHeadingVar = container
+      ? getComputedStyle(container).getPropertyValue("--font-heading")
+      : null;
+
+    const h1 = container?.querySelector("h1") as HTMLElement | null;
+    const h1Font = h1 ? getComputedStyle(h1).fontFamily : null;
+
+    console.log("[CreatorProfile fonts]", {
+      apiFontFamily: profile.theme.fontFamily,
+      apiCustomFontUrl: profile.theme.customFontUrl,
+      resolvedCssHeadingVar: cssHeadingVar,
+      resolvedH1Font: h1Font,
+    });
+  }, [profile?.theme.fontFamily, profile?.theme.customFontUrl]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -192,18 +215,38 @@ const CreatorProfile = () => {
     }
   };
 
-  // Build font family string - clean up and use the fontFamily with fallback
-  // Remove existing quotes and fallbacks from the fontFamily, then add our own
+  // Build font family string
+  // - If API sends a generic family keyword (e.g. "monospace"), don't quote it.
+  // - If it's a named font with spaces (e.g. "Playfair Display"), quote it.
   const cleanFontFamily = theme.fontFamily
-    ? theme.fontFamily
-        .replace(/['"]/g, '') // Remove quotes
-        .split(',')[0] // Take only the first font name
-        .trim()
+    ? theme.fontFamily.replace(/["']/g, "").split(",")[0].trim()
     : null;
-  
-  const fontFamilyStyle = cleanFontFamily 
-    ? `"${cleanFontFamily}", system-ui, sans-serif`
-    : 'system-ui, sans-serif';
+
+  const GENERIC_FAMILIES = new Set([
+    "serif",
+    "sans-serif",
+    "monospace",
+    "cursive",
+    "fantasy",
+    "system-ui",
+    "ui-sans-serif",
+    "ui-serif",
+    "ui-monospace",
+    "ui-rounded",
+    "emoji",
+    "math",
+    "fangsong",
+  ]);
+
+  const baseFont = cleanFontFamily
+    ? GENERIC_FAMILIES.has(cleanFontFamily.toLowerCase())
+      ? cleanFontFamily
+      : cleanFontFamily.includes(" ")
+        ? `"${cleanFontFamily}"`
+        : cleanFontFamily
+    : null;
+
+  const fontFamilyStyle = baseFont ? `${baseFont}, system-ui, sans-serif` : "system-ui, sans-serif";
 
   const containerStyle: (React.CSSProperties & Record<string, string>) = {
     backgroundColor: theme.backgroundColor,
@@ -290,7 +333,7 @@ const CreatorProfile = () => {
   };
 
   return (
-    <div style={containerStyle} className="pb-12">
+    <div data-creator-profile-container style={containerStyle} className="pb-12">
       {/* Header */}
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
         <div className="w-10 h-10 flex items-center justify-center opacity-70">
