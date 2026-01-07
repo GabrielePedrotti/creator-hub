@@ -192,6 +192,11 @@ const CreatorProfile = () => {
     }
   };
 
+  // Build font family string - use the fontFamily directly, with fallback
+  const fontFamilyStyle = theme.fontFamily 
+    ? `"${theme.fontFamily}", system-ui, sans-serif`
+    : 'system-ui, sans-serif';
+
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.backgroundColor,
     backgroundImage: theme.backgroundImage 
@@ -201,7 +206,7 @@ const CreatorProfile = () => {
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
     color: theme.textColor,
-    fontFamily: theme.fontFamily,
+    fontFamily: fontFamilyStyle,
     minHeight: "100vh",
   };
 
