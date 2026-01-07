@@ -192,9 +192,17 @@ const CreatorProfile = () => {
     }
   };
 
-  // Build font family string - use the fontFamily directly, with fallback
-  const fontFamilyStyle = theme.fontFamily 
-    ? `"${theme.fontFamily}", system-ui, sans-serif`
+  // Build font family string - clean up and use the fontFamily with fallback
+  // Remove existing quotes and fallbacks from the fontFamily, then add our own
+  const cleanFontFamily = theme.fontFamily
+    ? theme.fontFamily
+        .replace(/['"]/g, '') // Remove quotes
+        .split(',')[0] // Take only the first font name
+        .trim()
+    : null;
+  
+  const fontFamilyStyle = cleanFontFamily 
+    ? `"${cleanFontFamily}", system-ui, sans-serif`
     : 'system-ui, sans-serif';
 
   const containerStyle: React.CSSProperties = {
