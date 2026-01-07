@@ -545,8 +545,7 @@ const CreatorProfile = () => {
 
         {/* LinkPulse Branding */}
         <div className="flex items-center gap-2 opacity-40">
-          <span className="text-lg">✦</span>
-          <span className="text-sm font-medium">LinkPulse</span>
+          <img src = "https://cdn.crewmaster.net/brand/Full-No-bg.png">
         </div>
       </div>
     </div>
