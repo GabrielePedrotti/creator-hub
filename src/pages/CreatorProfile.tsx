@@ -539,7 +539,7 @@ const CreatorProfile = () => {
         </div>
 
         <div className="flex items-center gap-2 opacity-40">
-          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.svg" alt="CrewMaster" className="h-6 w-auto" />
+          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.svg" alt="CrewMaster" className="w-auto" />
         </div>
       </div>
     </div>
