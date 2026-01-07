@@ -538,10 +538,8 @@ const CreatorProfile = () => {
           </a>
         </div>
 
-        {/* LinkPulse Branding */}
-        {/* LinkPulse Branding */}
         <div className="flex items-center gap-2 opacity-40">
-          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.png" alt="LinkPulse" className="h-18 object-contain" />
+          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.svg" alt="CrewMaster" className="h-6 w-auto" />
         </div>
       </div>
     </div>
