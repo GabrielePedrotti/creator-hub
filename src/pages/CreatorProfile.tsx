@@ -205,16 +205,21 @@ const CreatorProfile = () => {
     ? `"${cleanFontFamily}", system-ui, sans-serif`
     : 'system-ui, sans-serif';
 
-  const containerStyle: React.CSSProperties = {
+  const containerStyle: (React.CSSProperties & Record<string, string>) = {
     backgroundColor: theme.backgroundColor,
-    backgroundImage: theme.backgroundImage 
-      ? `url(${theme.backgroundImage})` 
+    backgroundImage: theme.backgroundImage
+      ? `url(${theme.backgroundImage})`
       : theme.backgroundGradient || undefined,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
     color: theme.textColor,
+
+    // Set the font for normal text and also override global heading styles (h1..h6)
     fontFamily: fontFamilyStyle,
+    "--font-heading": fontFamilyStyle,
+    "--font-body": fontFamilyStyle,
+
     minHeight: "100vh",
   };
 
