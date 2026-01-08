@@ -1,11 +1,10 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Profile, detectPlatform, extractTwitchUsername } from "@/types/profile";
+import { Profile, detectPlatform } from "@/types/profile";
 import { Share2, MoreVertical, Radio, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import PlatformIcon from "@/components/profile/PlatformIcon";
-import { useTwitchLive } from "@/hooks/useTwitchLive";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Cache helpers
@@ -56,12 +55,13 @@ interface APIResponse {
       backgroundColor: string;
       textColor: string;
     };
+    twStatus?: boolean; // Twitch live status from API
   }>;
   featuredVideo?: {
     url: string;
-    title: string;
-    thumbnail: string;
-    platform: string;
+    title?: string;
+    thumbnail?: string;
+    platform?: string;
   };
 }
 
@@ -94,6 +94,7 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
     isFeatured: link.isFeatured,
     badge: link.badge as "NEW" | "HOT" | "SALE" | "CUSTOM" | null | undefined,
     customBadge: link.customBadge,
+    twStatus: link.twStatus,
   })),
   featuredVideo:
     data.featuredVideo && data.featuredVideo.url
@@ -144,16 +145,64 @@ const CreatorProfile = () => {
   // Use cached or fresh profile
   const displayProfile = profile || cachedProfile;
 
-  // Extract Twitch usernames for live detection
-  const twitchUsernames = useMemo(() => {
-    if (!displayProfile?.links) return [];
-    return displayProfile.links
-      .filter((link) => link.enabled && detectPlatform(link.url) === "twitch")
-      .map((link) => extractTwitchUsername(link.url))
-      .filter((username): username is string => username !== null);
-  }, [displayProfile?.links]);
+  // YouTube oEmbed for featured video missing title/thumbnail
+  const [enrichedFeaturedVideo, setEnrichedFeaturedVideo] = useState(displayProfile?.featuredVideo);
 
-  const { liveStatus } = useTwitchLive(twitchUsernames);
+  useEffect(() => {
+    const fetchYouTubeInfo = async () => {
+      const fv = displayProfile?.featuredVideo;
+      if (!fv?.url) {
+        setEnrichedFeaturedVideo(undefined);
+        return;
+      }
+
+      const needsTitle = !fv.title;
+      const needsThumbnail = !fv.thumbnail;
+
+      if (!needsTitle && !needsThumbnail) {
+        setEnrichedFeaturedVideo(fv);
+        return;
+      }
+
+      // Extract YouTube video ID
+      const ytMatch = fv.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (!ytMatch) {
+        setEnrichedFeaturedVideo(fv);
+        return;
+      }
+
+      const videoId = ytMatch[1];
+      let title = fv.title;
+      let thumbnail = fv.thumbnail;
+
+      // Fetch title from oEmbed if needed
+      if (needsTitle) {
+        try {
+          const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+          if (res.ok) {
+            const data = await res.json();
+            title = data.title || title;
+          }
+        } catch {
+          // Fallback: keep original
+        }
+      }
+
+      // Generate thumbnail if needed
+      if (needsThumbnail) {
+        thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      }
+
+      setEnrichedFeaturedVideo({
+        url: fv.url,
+        title: title || "Video",
+        thumbnail: thumbnail || "",
+        platform: fv.platform || "youtube",
+      });
+    };
+
+    fetchYouTubeInfo();
+  }, [displayProfile?.featuredVideo]);
 
   // Inject custom font if provided
   useEffect(() => {
@@ -274,7 +323,7 @@ const CreatorProfile = () => {
     );
   }
 
-  const { theme, links, featuredVideo } = displayProfile!;
+  const { theme, links } = displayProfile!;
 
   const getButtonRadius = () => {
     switch (theme.buttonStyle) {
@@ -378,9 +427,10 @@ const CreatorProfile = () => {
     return link.badge;
   };
 
-  const isLinkTwitchLive = (url: string): boolean => {
-    const username = extractTwitchUsername(url);
-    return username ? liveStatus[username.toLowerCase()] === true : false;
+  // Check if a link has Twitch live status from API
+  const isLinkTwitchLive = (link: (typeof links)[0]): boolean => {
+    const platform = detectPlatform(link.url);
+    return platform === "twitch" && link.twStatus === true;
   };
 
   const handleShare = async () => {
@@ -471,9 +521,9 @@ const CreatorProfile = () => {
       {/* Links Container */}
       <div className="px-4 max-w-lg mx-auto space-y-3">
         {/* Featured Video */}
-        {featuredVideo && (
+        {enrichedFeaturedVideo && (
           <motion.a
-            href={featuredVideo.url}
+            href={enrichedFeaturedVideo.url}
             target="_blank"
             rel="noopener noreferrer"
             initial={{ y: 20, opacity: 0 }}
@@ -485,16 +535,16 @@ const CreatorProfile = () => {
             <div className="flex items-center gap-4 p-4">
               <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
                 <img
-                  src={featuredVideo.thumbnail || extractYouTubeThumbnail(featuredVideo.url)}
-                  alt={featuredVideo.title}
+                  src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
+                  alt={enrichedFeaturedVideo.title || "Video"}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate">{featuredVideo.title}</p>
+                <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
                 <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
-                  <PlatformIcon platform={featuredVideo.platform} size={14} />
-                  <span className="capitalize">{featuredVideo.platform}</span>
+                  <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
+                  <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
                 </div>
               </div>
               <div className="p-2 opacity-50">
@@ -507,7 +557,7 @@ const CreatorProfile = () => {
         {/* Regular Links */}
         {enabledLinks.map((link, index) => {
           const platform = detectPlatform(link.url);
-          const isTwitchLive = platform === "twitch" && isLinkTwitchLive(link.url);
+          const isTwitchLive = isLinkTwitchLive(link);
           const isFeatured = link.isFeatured;
 
           return (
