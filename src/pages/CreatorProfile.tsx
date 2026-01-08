@@ -149,7 +149,7 @@ const CreatorProfile = () => {
   const [enrichedFeaturedVideo, setEnrichedFeaturedVideo] = useState(displayProfile?.featuredVideo);
 
   useEffect(() => {
-    const fetchYouTubeInfo = async () => {
+    const fetchVideoInfo = async () => {
       const fv = displayProfile?.featuredVideo;
       if (!fv?.url) {
         setEnrichedFeaturedVideo(undefined);
@@ -164,9 +164,35 @@ const CreatorProfile = () => {
         return;
       }
 
-      // Extract YouTube video ID
+      let finalUrl = fv.url;
+
+      // Follow redirects by fetching the URL and checking for YouTube pattern
       const ytMatch = fv.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      
       if (!ytMatch) {
+        // URL might be a redirect - try to resolve it via oEmbed directly
+        // YouTube oEmbed can handle various URL formats including redirects
+        try {
+          const oEmbedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(fv.url)}&format=json`);
+          if (oEmbedRes.ok) {
+            const oEmbedData = await oEmbedRes.json();
+            // Extract video ID from thumbnail URL in oEmbed response
+            const thumbMatch = oEmbedData.thumbnail_url?.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+            if (thumbMatch) {
+              const videoId = thumbMatch[1];
+              setEnrichedFeaturedVideo({
+                url: fv.url,
+                title: needsTitle ? (oEmbedData.title || "Video") : fv.title,
+                thumbnail: needsThumbnail ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : fv.thumbnail,
+                platform: fv.platform || "youtube",
+              });
+              return;
+            }
+          }
+        } catch {
+          // oEmbed failed, keep original
+        }
+
         setEnrichedFeaturedVideo(fv);
         return;
       }
@@ -201,7 +227,7 @@ const CreatorProfile = () => {
       });
     };
 
-    fetchYouTubeInfo();
+    fetchVideoInfo();
   }, [displayProfile?.featuredVideo]);
 
   // Inject custom font if provided
