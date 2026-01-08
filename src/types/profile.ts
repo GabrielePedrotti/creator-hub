@@ -13,6 +13,7 @@ export interface ProfileLink {
   isFeatured?: boolean;
   badge?: 'NEW' | 'HOT' | 'SALE' | 'CUSTOM' | null;
   customBadge?: CustomBadge;
+  twStatus?: boolean;
 }
 
 export interface ProfileTheme {
