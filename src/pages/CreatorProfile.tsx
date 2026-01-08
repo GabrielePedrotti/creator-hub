@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import PlatformIcon from "@/components/profile/PlatformIcon";
 import { useTwitchLive } from "@/hooks/useTwitchLive";
 import { useMemo, useEffect } from "react";
+import { toast } from "sonner";
 
 // API response type (matches your backend structure)
 interface APIResponse {
@@ -320,10 +321,14 @@ const CreatorProfile = () => {
         });
       } else {
         await navigator.clipboard.writeText(window.location.href);
-        // You could add a toast notification here
+        toast.success("Link copiato negli appunti!");
       }
     } catch (err) {
-      console.error("Share failed:", err);
+      // User cancelled share or error occurred
+      if ((err as Error).name !== "AbortError") {
+        console.error("Share failed:", err);
+        toast.error("Impossibile condividere");
+      }
     }
   };
 
