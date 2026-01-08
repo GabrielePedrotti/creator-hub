@@ -143,11 +143,49 @@ const CreatorProfile = () => {
     }
   }, [profile?.theme.customFontUrl]);
 
-  // Update document title
+  // Update document title and OG meta tags
   useEffect(() => {
     if (profile) {
-      document.title = `${profile.displayName} (@${profile.username}) | LinkPulse`;
+      const pageTitle = `${profile.displayName} (@${profile.username}) | LinkPulse`;
+      const pageDescription = profile.bio || `Scopri i link di ${profile.displayName}`;
+      const pageUrl = window.location.href;
+      const pageImage = profile.avatar || "https://lovable.dev/opengraph-image-p98pqg.png";
+
+      // Update title
+      document.title = pageTitle;
+
+      // Helper to set or create meta tag
+      const setMeta = (selector: string, attribute: string, content: string) => {
+        let el = document.querySelector(selector) as HTMLMetaElement | null;
+        if (!el) {
+          el = document.createElement("meta");
+          if (selector.includes("property=")) {
+            el.setAttribute("property", selector.match(/property="([^"]+)"/)?.[1] || "");
+          } else if (selector.includes("name=")) {
+            el.setAttribute("name", selector.match(/name="([^"]+)"/)?.[1] || "");
+          }
+          document.head.appendChild(el);
+        }
+        el.setAttribute(attribute, content);
+      };
+
+      // Open Graph tags
+      setMeta('meta[property="og:title"]', "content", pageTitle);
+      setMeta('meta[property="og:description"]', "content", pageDescription);
+      setMeta('meta[property="og:url"]', "content", pageUrl);
+      setMeta('meta[property="og:image"]', "content", pageImage);
+      setMeta('meta[property="og:type"]', "content", "profile");
+
+      // Twitter Card tags
+      setMeta('meta[name="twitter:title"]', "content", pageTitle);
+      setMeta('meta[name="twitter:description"]', "content", pageDescription);
+      setMeta('meta[name="twitter:image"]', "content", pageImage);
+      setMeta('meta[name="twitter:card"]', "content", "summary_large_image");
+
+      // Standard meta description
+      setMeta('meta[name="description"]', "content", pageDescription);
     }
+
     return () => {
       document.title = "LinkPulse";
     };
