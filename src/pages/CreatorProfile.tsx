@@ -8,6 +8,24 @@ import { useTwitchLive } from "@/hooks/useTwitchLive";
 import { useMemo, useEffect } from "react";
 import { toast } from "sonner";
 
+// Cache helpers
+const CACHE_PREFIX = "creator_profile_";
+const getCachedProfile = (id: string): Profile | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_PREFIX + id);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+const setCachedProfile = (id: string, profile: Profile) => {
+  try {
+    localStorage.setItem(CACHE_PREFIX + id, JSON.stringify(profile));
+  } catch {
+    // localStorage full or unavailable
+  }
+};
+
 // API response type (matches your backend structure)
 interface APIResponse {
   username: string;
@@ -101,6 +119,9 @@ const fetchCreatorProfile = async (id: string): Promise<Profile> => {
 const CreatorProfile = () => {
   const { id } = useParams<{ id: string }>();
 
+  // Get cached profile for instant display
+  const cachedProfile = useMemo(() => (id ? getCachedProfile(id) : null), [id]);
+
   const {
     data: profile,
     isLoading,
@@ -110,22 +131,33 @@ const CreatorProfile = () => {
     queryFn: () => fetchCreatorProfile(id!),
     enabled: !!id,
     retry: 1,
+    staleTime: 1000 * 60 * 5, // 5 min stale time
   });
+
+  // Save fresh data to cache
+  useEffect(() => {
+    if (profile && id) {
+      setCachedProfile(id, profile);
+    }
+  }, [profile, id]);
+
+  // Use cached or fresh profile
+  const displayProfile = profile || cachedProfile;
 
   // Extract Twitch usernames for live detection
   const twitchUsernames = useMemo(() => {
-    if (!profile?.links) return [];
-    return profile.links
+    if (!displayProfile?.links) return [];
+    return displayProfile.links
       .filter((link) => link.enabled && detectPlatform(link.url) === "twitch")
       .map((link) => extractTwitchUsername(link.url))
       .filter((username): username is string => username !== null);
-  }, [profile?.links]);
+  }, [displayProfile?.links]);
 
   const { liveStatus } = useTwitchLive(twitchUsernames);
 
   // Inject custom font if provided
   useEffect(() => {
-    if (profile?.theme.customFontUrl) {
+    if (displayProfile?.theme.customFontUrl) {
       const existingLink = document.getElementById("custom-profile-font");
       if (existingLink) {
         existingLink.remove();
@@ -134,22 +166,22 @@ const CreatorProfile = () => {
       const link = document.createElement("link");
       link.id = "custom-profile-font";
       link.rel = "stylesheet";
-      link.href = profile.theme.customFontUrl;
+      link.href = displayProfile.theme.customFontUrl;
       document.head.appendChild(link);
 
       return () => {
         link.remove();
       };
     }
-  }, [profile?.theme.customFontUrl]);
+  }, [displayProfile?.theme.customFontUrl]);
 
   // Update document title and OG meta tags
   useEffect(() => {
-    if (profile) {
-      const pageTitle = `${profile.displayName} (@${profile.username}) | LinkPulse`;
-      const pageDescription = profile.bio || `Scopri i link di ${profile.displayName}`;
+    if (displayProfile) {
+      const pageTitle = `${displayProfile.displayName} (@${displayProfile.username}) | LinkPulse`;
+      const pageDescription = displayProfile.bio || `Scopri i link di ${displayProfile.displayName}`;
       const pageUrl = window.location.href;
-      const pageImage = profile.avatar || "https://lovable.dev/opengraph-image-p98pqg.png";
+      const pageImage = displayProfile.avatar || "https://lovable.dev/opengraph-image-p98pqg.png";
 
       // Update title
       document.title = pageTitle;
@@ -189,11 +221,11 @@ const CreatorProfile = () => {
     return () => {
       document.title = "LinkPulse";
     };
-  }, [profile]);
+  }, [displayProfile]);
 
   // Debug: verify which font is actually applied (will show in console)
   useEffect(() => {
-    if (!profile) return;
+    if (!displayProfile) return;
 
     const container = document.querySelector("[data-creator-profile-container]") as HTMLElement | null;
 
@@ -203,14 +235,15 @@ const CreatorProfile = () => {
     const h1Font = h1 ? getComputedStyle(h1).fontFamily : null;
 
     console.log("[CreatorProfile fonts]", {
-      apiFontFamily: profile.theme.fontFamily,
-      apiCustomFontUrl: profile.theme.customFontUrl,
+      apiFontFamily: displayProfile.theme.fontFamily,
+      apiCustomFontUrl: displayProfile.theme.customFontUrl,
       resolvedCssHeadingVar: cssHeadingVar,
       resolvedH1Font: h1Font,
     });
-  }, [profile?.theme.fontFamily, profile?.theme.customFontUrl]);
+  }, [displayProfile?.theme.fontFamily, displayProfile?.theme.customFontUrl]);
 
-  if (isLoading) {
+  // Show loading only if no cached data available
+  if (isLoading && !displayProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -221,7 +254,8 @@ const CreatorProfile = () => {
     );
   }
 
-  if (error || !profile) {
+  // Show error only if no cached data available
+  if ((error || !profile) && !displayProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center px-6">
@@ -240,7 +274,7 @@ const CreatorProfile = () => {
     );
   }
 
-  const { theme, links, featuredVideo } = profile;
+  const { theme, links, featuredVideo } = displayProfile!;
 
   const getButtonRadius = () => {
     switch (theme.buttonStyle) {
@@ -353,8 +387,8 @@ const CreatorProfile = () => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${profile.displayName} | LinkPulse`,
-          text: profile.bio,
+          title: `${displayProfile!.displayName} | LinkPulse`,
+          text: displayProfile!.bio,
           url: window.location.href,
         });
       } else {
@@ -392,14 +426,14 @@ const CreatorProfile = () => {
           animate={{ scale: 1, opacity: 1 }}
           className="w-28 h-28 rounded-full overflow-hidden mb-5 ring-4 ring-white/20 shadow-2xl"
         >
-          {profile.avatar ? (
-            <img src={profile.avatar} alt={profile.displayName} className="w-full h-full object-cover" />
+          {displayProfile!.avatar ? (
+            <img src={displayProfile!.avatar} alt={displayProfile!.displayName} className="w-full h-full object-cover" />
           ) : (
             <div
               className="w-full h-full flex items-center justify-center text-3xl font-bold"
               style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
             >
-              {profile.displayName.charAt(0).toUpperCase()}
+              {displayProfile!.displayName.charAt(0).toUpperCase()}
             </div>
           )}
         </motion.div>
@@ -410,17 +444,17 @@ const CreatorProfile = () => {
           transition={{ delay: 0.1 }}
           className="text-2xl font-bold mb-2"
         >
-          @{profile.username}
+          @{displayProfile!.username}
         </motion.h1>
 
-        {profile.displayName && profile.displayName !== profile.username && (
+        {displayProfile!.displayName && displayProfile!.displayName !== displayProfile!.username && (
           <motion.p
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
             className="text-lg opacity-90 mb-1"
           >
-            {profile.displayName}
+            {displayProfile!.displayName}
           </motion.p>
         )}
 
@@ -430,7 +464,7 @@ const CreatorProfile = () => {
           transition={{ delay: 0.2 }}
           className="text-base opacity-75 text-center max-w-sm leading-relaxed"
         >
-          {profile.bio}
+          {displayProfile!.bio}
         </motion.p>
       </div>
 
