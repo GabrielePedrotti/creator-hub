@@ -577,7 +577,9 @@ const CreatorProfile = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="overflow-hidden shadow-xl"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="overflow-hidden shadow-xl transition-transform"
                 style={videoCardStyle}
               >
                 <div className="aspect-video w-full">
@@ -606,7 +608,9 @@ const CreatorProfile = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="block relative overflow-hidden shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="block relative overflow-hidden shadow-xl transition-transform"
                 style={videoCardStyle}
               >
                 <div className="relative aspect-video w-full">
@@ -641,7 +645,9 @@ const CreatorProfile = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="block relative overflow-hidden shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="block relative overflow-hidden shadow-xl transition-transform"
               style={{ ...cardStyle, padding: 0 }}
             >
               <div className="flex items-center gap-4 p-4">
@@ -691,7 +697,9 @@ const CreatorProfile = () => {
                     }
                   : undefined,
               }}
-              className={`flex items-center gap-4 p-4 transition-all hover:scale-[1.01] active:scale-[0.99] relative ${
+              whileHover={{ scale: isFeatured ? 1.02 : 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className={`flex items-center gap-4 p-4 transition-all relative ${
                 isFeatured ? "ring-2 ring-white/30 shadow-2xl" : "shadow-lg"
               }`}
               style={{
