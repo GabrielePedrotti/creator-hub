@@ -489,7 +489,9 @@ const CreatorProfile = () => {
       {/* Header */}
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
         <div className="w-10 h-10 flex items-center justify-center opacity-70">
-          <span className="text-xl">✦</span>
+          <a className="text-xl" href="https://crewmaster.net">
+            <img src="https://cdn.crewmaster.net/brand/Icon-No-bg.svg" alt="CrewMaster" className="h-10 w-10" />
+          </a>
         </div>
         <button
           onClick={handleShare}
