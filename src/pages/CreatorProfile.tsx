@@ -776,20 +776,6 @@ const CreatorProfile = () => {
           unisciti a {displayProfile.username} su CrewMaster
         </a>
 
-        <div className="flex items-center gap-4 text-xs opacity-50">
-          <a href="/privacy" className="hover:opacity-80 transition-opacity">
-            Privacy
-          </a>
-          <span>•</span>
-          <a href="/terms" className="hover:opacity-80 transition-opacity">
-            Termini
-          </a>
-          <span>•</span>
-          <a href="/report" className="hover:opacity-80 transition-opacity">
-            Segnala
-          </a>
-        </div>
-
         {/* LinkPulse Branding */}
         <div className="flex items-center gap-2 opacity-40">
           <img src="https://cdn.crewmaster.net/brand/Full-No-bg.svg" alt="CrewMaster" className="h-10 w-auto" />
