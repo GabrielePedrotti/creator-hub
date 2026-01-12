@@ -769,7 +769,7 @@ const CreatorProfile = () => {
       {/* Footer */}
       <div className="mt-12 flex flex-col items-center gap-6 px-4 max-w-lg mx-auto">
         <a
-          href="crewmaster.net/@{displayProfile.username}"
+          href="https://crewmaster.net/@{displayProfile.username}"
           className="px-8 py-3 text-sm font-semibold border-2 rounded-full opacity-90 hover:opacity-100 transition-opacity backdrop-blur-sm bg-white/5"
           style={{ borderColor: theme.textColor }}
         >
