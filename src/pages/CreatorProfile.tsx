@@ -497,7 +497,7 @@ const CreatorProfile = () => {
             <img
               src="https://cdn.crewmaster.net/brand/Icon-colorable.svg"
               className="h-10 w-10"
-              style=
+              style={{ color: theme.textColor }}
             />
           </a>
         </div>
