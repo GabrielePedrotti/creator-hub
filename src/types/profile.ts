@@ -43,6 +43,7 @@ export interface Profile {
     title: string;
     thumbnail: string;
     platform: 'youtube' | 'twitch' | 'tiktok';
+    type?: 1 | 2 | 3; // 1=piccolo, 2=copertina grande, 3=player YouTube
   };
 }
 

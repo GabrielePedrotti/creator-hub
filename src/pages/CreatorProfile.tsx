@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Profile, detectPlatform } from "@/types/profile";
-import { Share2, MoreVertical, Radio, Loader2 } from "lucide-react";
+import { Share2, Radio, Loader2, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import PlatformIcon from "@/components/profile/PlatformIcon";
 import { useMemo, useEffect, useState } from "react";
@@ -62,6 +62,7 @@ interface APIResponse {
     title?: string;
     thumbnail?: string;
     platform?: string;
+    type?: 1 | 2 | 3;
   };
 }
 
@@ -103,6 +104,7 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
           title: data.featuredVideo.title,
           thumbnail: data.featuredVideo.thumbnail,
           platform: data.featuredVideo.platform as "youtube" | "twitch" | "tiktok",
+          type: (data.featuredVideo as any).type as 1 | 2 | 3 | undefined,
         }
       : undefined,
 });
@@ -547,38 +549,107 @@ const CreatorProfile = () => {
       {/* Links Container */}
       <div className="px-4 max-w-lg mx-auto space-y-3">
         {/* Featured Video */}
-        {enrichedFeaturedVideo && (
-          <motion.a
-            href={enrichedFeaturedVideo.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="block relative overflow-hidden shadow-xl hover:scale-[1.02] transition-transform"
-            style={{ ...cardStyle, padding: 0 }}
-          >
-            <div className="flex items-center gap-4 p-4">
-              <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
-                <img
-                  src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
-                  alt={enrichedFeaturedVideo.title || "Video"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
-                <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
-                  <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
-                  <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
+        {enrichedFeaturedVideo && (() => {
+          const videoType = (enrichedFeaturedVideo as any).type || 1;
+          const extractYouTubeVideoId = (url: string): string | null => {
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+          };
+          const videoId = extractYouTubeVideoId(enrichedFeaturedVideo.url);
+          
+          // Type 3: YouTube Player embed
+          if (videoType === 3 && videoId) {
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="overflow-hidden shadow-xl"
+                style={{ ...cardStyle, padding: 0 }}
+              >
+                <div className="aspect-video w-full">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    title={enrichedFeaturedVideo.title || "Video"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="font-semibold text-sm truncate">{enrichedFeaturedVideo.title || "Video"}</p>
+                </div>
+              </motion.div>
+            );
+          }
+          
+          // Type 2: Large cover above card
+          if (videoType === 2) {
+            return (
+              <motion.a
+                href={enrichedFeaturedVideo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="block relative overflow-hidden shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                style={{ ...cardStyle, padding: 0 }}
+              >
+                <div className="relative aspect-video w-full">
+                  <img
+                    src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
+                    alt={enrichedFeaturedVideo.title || "Video"}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                      <Play size={28} className="ml-1" style={{ color: theme.cardColor }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
+                  <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
+                    <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
+                    <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
+                  </div>
+                </div>
+              </motion.a>
+            );
+          }
+          
+          // Type 1 (default): Small thumbnail
+          return (
+            <motion.a
+              href={enrichedFeaturedVideo.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="block relative overflow-hidden shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
+              style={{ ...cardStyle, padding: 0 }}
+            >
+              <div className="flex items-center gap-4 p-4">
+                <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                  <img
+                    src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
+                    alt={enrichedFeaturedVideo.title || "Video"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
+                  <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
+                    <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
+                    <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
+                  </div>
                 </div>
               </div>
-              <div className="p-2 opacity-50">
-                <MoreVertical size={18} />
-              </div>
-            </div>
-          </motion.a>
-        )}
+            </motion.a>
+          );
+        })()}
 
         {/* Regular Links */}
         {enabledLinks.map((link, index) => {
@@ -592,9 +663,8 @@ const CreatorProfile = () => {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              initial={{ y: 20, opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{
-                y: 0,
                 opacity: 1,
                 scale: isFeatured ? [1, 1.02, 1] : 1,
               }}
@@ -608,7 +678,7 @@ const CreatorProfile = () => {
                     }
                   : undefined,
               }}
-              className={`flex items-center gap-4 p-4 transition-all hover:scale-[1.02] relative ${
+              className={`flex items-center gap-4 p-4 transition-all hover:scale-[1.01] active:scale-[0.99] relative ${
                 isFeatured ? "ring-2 ring-white/30 shadow-2xl" : "shadow-lg"
               }`}
               style={{
@@ -659,9 +729,8 @@ const CreatorProfile = () => {
                 />
               )}
 
-              <div className="p-2 opacity-50">
-                <MoreVertical size={18} />
-              </div>
+              {/* Spacer for balance (no more 3 dots) */}
+              <div className="w-8" />
             </motion.a>
           );
         })}
