@@ -490,7 +490,13 @@ const CreatorProfile = () => {
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
         <div className="w-10 h-10 flex items-center justify-center opacity-70" style={{ color: theme.textColor }}>
           <a href="https://crewmaster.net">
-            <img src="https://cdn.crewmaster.net/brand/Icon-No-bg.svg" alt="CrewMaster" className="h-10 w-10" />
+            <img
+              src="https://cdn.crewmaster.net/brand/Icon-No-bg.svg"
+              className="h-10 w-10"
+              style={{
+                filter: `drop-shadow(0 0 0 ${theme.textColor}) saturate(0) brightness(0)`,
+              }}
+            />
           </a>
         </div>
 
