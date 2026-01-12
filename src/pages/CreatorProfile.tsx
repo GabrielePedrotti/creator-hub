@@ -490,10 +490,7 @@ const CreatorProfile = () => {
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
         <div className="w-10 h-10 flex items-center justify-center opacity-70" style={{ color: theme.textColor }}>
           <a href="https://crewmaster.net">
-            import {ReactComponent as CrewIcon} from "./Icon-colorable.svg";
-            <div style={{ color: theme.textColor }} className="w-10 h-10">
-              <CrewIcon className="w-10 h-10" />
-            </div>
+            <img src="https://cdn.crewmaster.net/brand/Icon-colorable.svg" className="h-10 w-10" />
           </a>
         </div>
 
