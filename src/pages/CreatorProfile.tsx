@@ -557,6 +557,19 @@ const CreatorProfile = () => {
           };
           const videoId = extractYouTubeVideoId(enrichedFeaturedVideo.url);
           
+          // For type 2 and 3, use rounded-xl instead of full rounded (pill)
+          const getVideoRadius = () => {
+            if (theme.buttonStyle === "pill") return "16px"; // Use large rounded instead of full
+            if (theme.buttonStyle === "square") return "4px";
+            return "12px";
+          };
+          
+          const videoCardStyle: React.CSSProperties = {
+            ...cardStyle,
+            borderRadius: videoType === 2 || videoType === 3 ? getVideoRadius() : cardStyle.borderRadius,
+            padding: 0,
+          };
+          
           // Type 3: YouTube Player embed
           if (videoType === 3 && videoId) {
             return (
@@ -565,7 +578,7 @@ const CreatorProfile = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 className="overflow-hidden shadow-xl"
-                style={{ ...cardStyle, padding: 0 }}
+                style={videoCardStyle}
               >
                 <div className="aspect-video w-full">
                   <iframe
@@ -594,7 +607,7 @@ const CreatorProfile = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 className="block relative overflow-hidden shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-transform"
-                style={{ ...cardStyle, padding: 0 }}
+                style={videoCardStyle}
               >
                 <div className="relative aspect-video w-full">
                   <img
