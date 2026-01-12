@@ -488,9 +488,13 @@ const CreatorProfile = () => {
     <div data-creator-profile-container style={containerStyle} className="pb-12">
       {/* Header */}
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
-        <div className="w-10 h-10 flex items-center justify-center opacity-70" style={{ color: theme.textColor }}>
+        <div className="w-10 h-10 flex items-center justify-center opacity-70">
           <a href="https://crewmaster.net">
-            <img src="https://cdn.crewmaster.net/brand/Icon-colorable.svg" className="h-10 w-10" />
+            <img
+              src="https://cdn.crewmaster.net/brand/Icon-colorable.svg"
+              className="h-10 w-10"
+              style={{ color: theme.textColor }}
+            />
           </a>
         </div>
 
