@@ -413,6 +413,13 @@ const CreatorProfile = () => {
     minHeight: "100vh",
   };
 
+  const featuredCard: React.CSSProperties = {
+    backgroundColor: theme.cardTextColor,
+    color: theme.cardColor,
+    borderRadius: getButtonRadius(),
+    fontFamily: fontFamilyStyle,
+  };
+
   const cardStyle: React.CSSProperties = {
     backgroundColor: theme.cardColor,
     color: theme.cardTextColor,
@@ -488,12 +495,11 @@ const CreatorProfile = () => {
     <div data-creator-profile-container style={containerStyle} className="pb-12">
       {/* Header */}
       <div className="flex justify-between items-center p-4 max-w-lg mx-auto">
-        <div className="w-10 h-10 flex items-center justify-center opacity-70">
+        <div className="w-10 h-10 flex items-center justify-center">
           <a href="https://crewmaster.net">
             <img
-              src="https://cdn.crewmaster.net/brand/Icon-colorable.svg"
+              src={`https://cdn.crewmaster.net/brand/icon.php?color=${theme.textColor.replace("#", "")}`}
               className="h-10 w-10"
-              style={{ color: theme.textColor }}
             />
           </a>
         </div>
@@ -590,7 +596,6 @@ const CreatorProfile = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   className="overflow-hidden shadow-xl transition-transform"
@@ -621,7 +626,6 @@ const CreatorProfile = () => {
                   rel="noopener noreferrer"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   className="block relative overflow-hidden shadow-xl transition-transform"
@@ -658,14 +662,13 @@ const CreatorProfile = () => {
                 rel="noopener noreferrer"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 className="block relative overflow-hidden shadow-xl transition-transform"
                 style={{ ...cardStyle, padding: 0 }}
               >
                 <div className="flex items-center gap-4 p-4">
-                  <div className="w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                  <div className="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
                     <img
                       src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
                       alt={enrichedFeaturedVideo.title || "Video"}
@@ -696,29 +699,12 @@ const CreatorProfile = () => {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: 1,
-                scale: isFeatured ? [1, 1.02, 1] : 1,
-              }}
-              transition={{
-                delay: 0.3 + (index + 1) * 0.05,
-                scale: isFeatured
-                  ? {
-                      repeat: Infinity,
-                      duration: 2,
-                      ease: "easeInOut",
-                    }
-                  : undefined,
-              }}
-              whileHover={{ scale: isFeatured ? 1.02 : 1.01 }}
+              whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className={`flex items-center gap-4 p-4 transition-all relative ${
-                isFeatured ? "ring-2 ring-white/30 shadow-2xl" : "shadow-lg"
-              }`}
+              className={`flex items-center gap-4 p-4 transition-all relative shadow-lg`}
               style={{
                 ...cardStyle,
-                boxShadow: isFeatured ? "0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(255,255,255,0.1)" : undefined,
+                ...(isFeatured && featuredCard),
               }}
             >
               {/* Platform Icon */}
@@ -758,12 +744,11 @@ const CreatorProfile = () => {
                   animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                   style={{
-                    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                    background: `linear-gradient(90deg, transparent, ${theme.cardColor}, transparent)`,
                     borderRadius: getButtonRadius(),
                   }}
                 />
               )}
-
               {/* Spacer for balance (no more 3 dots) */}
               <div className="w-8" />
             </motion.a>
@@ -780,11 +765,6 @@ const CreatorProfile = () => {
         >
           unisciti a {displayProfile.username} su CrewMaster
         </a>
-
-        {/* LinkPulse Branding */}
-        <div className="flex items-center gap-2 opacity-40">
-          <img src="https://cdn.crewmaster.net/brand/Full-No-bg.svg" alt="CrewMaster" className="h-10 w-auto" />
-        </div>
       </div>
     </div>
   );
