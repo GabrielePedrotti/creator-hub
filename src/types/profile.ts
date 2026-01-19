@@ -31,6 +31,15 @@ export interface ProfileTheme {
   isCustom?: boolean;
 }
 
+export interface FeaturedVideo {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail: string;
+  platform: 'youtube' | 'twitch' | 'tiktok';
+  type?: 1 | 2 | 3; // 1=piccolo, 2=copertina grande, 3=player YouTube
+}
+
 export interface Profile {
   username: string;
   displayName: string;
@@ -38,13 +47,7 @@ export interface Profile {
   avatar: string;
   theme: ProfileTheme;
   links: ProfileLink[];
-  featuredVideo?: {
-    url: string;
-    title: string;
-    thumbnail: string;
-    platform: 'youtube' | 'twitch' | 'tiktok';
-    type?: 1 | 2 | 3; // 1=piccolo, 2=copertina grande, 3=player YouTube
-  };
+  featuredVideos?: FeaturedVideo[];
 }
 
 // Platform detection helper

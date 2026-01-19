@@ -57,13 +57,14 @@ interface APIResponse {
     };
     twStatus?: boolean; // Twitch live status from API
   }>;
-  featuredVideo?: {
+  featuredVideos?: Array<{
+    id?: string;
     url: string;
     title?: string;
     thumbnail?: string;
     platform?: string;
     type?: 1 | 2 | 3;
-  };
+  }>;
 }
 
 // Transform API response to Profile type
@@ -97,15 +98,16 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
     customBadge: link.customBadge,
     twStatus: link.twStatus,
   })),
-  featuredVideo:
-    data.featuredVideo && data.featuredVideo.url
-      ? {
-          url: data.featuredVideo.url,
-          title: data.featuredVideo.title,
-          thumbnail: data.featuredVideo.thumbnail,
-          platform: data.featuredVideo.platform as "youtube" | "twitch" | "tiktok",
-          type: (data.featuredVideo as any).type as 1 | 2 | 3 | undefined,
-        }
+  featuredVideos:
+    data.featuredVideos && data.featuredVideos.length > 0
+      ? data.featuredVideos.map((fv, idx) => ({
+          id: fv.id || `fv-${idx}`,
+          url: fv.url,
+          title: fv.title || 'Video',
+          thumbnail: fv.thumbnail || '',
+          platform: (fv.platform as 'youtube' | 'twitch' | 'tiktok') || 'youtube',
+          type: (fv as any).type as 1 | 2 | 3 | undefined,
+        }))
       : undefined,
 });
 
@@ -147,92 +149,86 @@ const CreatorProfile = () => {
   // Use cached or fresh profile
   const displayProfile = profile || cachedProfile;
 
-  // YouTube oEmbed for featured video missing title/thumbnail
-  const [enrichedFeaturedVideo, setEnrichedFeaturedVideo] = useState(displayProfile?.featuredVideo);
+  // YouTube oEmbed for featured videos missing title/thumbnail
+  const [enrichedFeaturedVideos, setEnrichedFeaturedVideos] = useState(displayProfile?.featuredVideos);
 
   useEffect(() => {
-    const fetchVideoInfo = async () => {
-      const fv = displayProfile?.featuredVideo;
-      if (!fv?.url) {
-        setEnrichedFeaturedVideo(undefined);
+    const fetchVideosInfo = async () => {
+      const videos = displayProfile?.featuredVideos;
+      if (!videos || videos.length === 0) {
+        setEnrichedFeaturedVideos(undefined);
         return;
       }
 
-      const needsTitle = !fv.title;
-      const needsThumbnail = !fv.thumbnail;
+      const enrichedVideos = await Promise.all(
+        videos.map(async (fv) => {
+          if (!fv.url) return fv;
 
-      if (!needsTitle && !needsThumbnail) {
-        setEnrichedFeaturedVideo(fv);
-        return;
-      }
+          const needsTitle = !fv.title;
+          const needsThumbnail = !fv.thumbnail;
 
-      let finalUrl = fv.url;
+          if (!needsTitle && !needsThumbnail) return fv;
 
-      // Follow redirects by fetching the URL and checking for YouTube pattern
-      const ytMatch = fv.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          const ytMatch = fv.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
 
-      if (!ytMatch) {
-        // URL might be a redirect - try to resolve it via oEmbed directly
-        // YouTube oEmbed can handle various URL formats including redirects
-        try {
-          const oEmbedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(fv.url)}&format=json`);
-          if (oEmbedRes.ok) {
-            const oEmbedData = await oEmbedRes.json();
-            // Extract video ID from thumbnail URL in oEmbed response
-            const thumbMatch = oEmbedData.thumbnail_url?.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
-            if (thumbMatch) {
-              const videoId = thumbMatch[1];
-              setEnrichedFeaturedVideo({
-                url: fv.url,
-                title: needsTitle ? oEmbedData.title || "Video" : fv.title,
-                thumbnail: needsThumbnail ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : fv.thumbnail,
-                platform: fv.platform || "youtube",
-              });
-              return;
+          if (!ytMatch) {
+            try {
+              const oEmbedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(fv.url)}&format=json`);
+              if (oEmbedRes.ok) {
+                const oEmbedData = await oEmbedRes.json();
+                const thumbMatch = oEmbedData.thumbnail_url?.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+                if (thumbMatch) {
+                  const videoId = thumbMatch[1];
+                  return {
+                    ...fv,
+                    title: needsTitle ? oEmbedData.title || "Video" : fv.title,
+                    thumbnail: needsThumbnail ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : fv.thumbnail,
+                    platform: fv.platform || "youtube",
+                  };
+                }
+              }
+            } catch {
+              // oEmbed failed
+            }
+            return fv;
+          }
+
+          const videoId = ytMatch[1];
+          let title = fv.title;
+          let thumbnail = fv.thumbnail;
+
+          if (needsTitle) {
+            try {
+              const res = await fetch(
+                `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+              );
+              if (res.ok) {
+                const data = await res.json();
+                title = data.title || title;
+              }
+            } catch {
+              // Fallback
             }
           }
-        } catch {
-          // oEmbed failed, keep original
-        }
 
-        setEnrichedFeaturedVideo(fv);
-        return;
-      }
-
-      const videoId = ytMatch[1];
-      let title = fv.title;
-      let thumbnail = fv.thumbnail;
-
-      // Fetch title from oEmbed if needed
-      if (needsTitle) {
-        try {
-          const res = await fetch(
-            `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-          );
-          if (res.ok) {
-            const data = await res.json();
-            title = data.title || title;
+          if (needsThumbnail) {
+            thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
           }
-        } catch {
-          // Fallback: keep original
-        }
-      }
 
-      // Generate thumbnail if needed
-      if (needsThumbnail) {
-        thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-      }
+          return {
+            ...fv,
+            title: title || "Video",
+            thumbnail: thumbnail || "",
+            platform: fv.platform || "youtube",
+          };
+        })
+      );
 
-      setEnrichedFeaturedVideo({
-        url: fv.url,
-        title: title || "Video",
-        thumbnail: thumbnail || "",
-        platform: fv.platform || "youtube",
-      });
+      setEnrichedFeaturedVideos(enrichedVideos as typeof videos);
     };
 
-    fetchVideoInfo();
-  }, [displayProfile?.featuredVideo]);
+    fetchVideosInfo();
+  }, [displayProfile?.featuredVideos]);
 
   // Inject custom font if provided
   useEffect(() => {
@@ -565,99 +561,63 @@ const CreatorProfile = () => {
         </motion.p>
       </div>
 
-      {/* Links Container */}
       <div className="px-4 max-w-lg mx-auto space-y-3">
-        {/* Featured Video */}
-        {enrichedFeaturedVideo &&
-          (() => {
-            const videoType = (enrichedFeaturedVideo as any).type || 1;
-            const extractYouTubeVideoId = (url: string): string | null => {
-              const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-              return match ? match[1] : null;
-            };
-            const videoId = extractYouTubeVideoId(enrichedFeaturedVideo.url);
+        {/* Featured Videos */}
+        {enrichedFeaturedVideos && enrichedFeaturedVideos.map((video, idx) => {
+          const videoType = (video as any).type || 1;
+          const extractYouTubeVideoId = (url: string): string | null => {
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+          };
+          const videoId = extractYouTubeVideoId(video.url);
 
-            // For type 2 and 3, use rounded-xl instead of full rounded (pill)
-            const getVideoRadius = () => {
-              if (theme.buttonStyle === "pill") return "16px"; // Use large rounded instead of full
-              if (theme.buttonStyle === "square") return "4px";
-              return "12px";
-            };
+          // For type 2 and 3, use rounded-xl instead of full rounded (pill)
+          const getVideoRadius = () => {
+            if (theme.buttonStyle === "pill") return "16px";
+            if (theme.buttonStyle === "square") return "4px";
+            return "12px";
+          };
 
-            const videoCardStyle: React.CSSProperties = {
-              ...cardStyle,
-              borderRadius: videoType === 2 || videoType === 3 ? getVideoRadius() : cardStyle.borderRadius,
-              padding: 0,
-            };
+          const videoCardStyle: React.CSSProperties = {
+            ...cardStyle,
+            borderRadius: videoType === 2 || videoType === 3 ? getVideoRadius() : cardStyle.borderRadius,
+            padding: 0,
+          };
 
-            // Type 3: YouTube Player embed
-            if (videoType === 3 && videoId) {
-              return (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="overflow-hidden shadow-xl transition-transform"
-                  style={videoCardStyle}
-                >
-                  <div className="aspect-video w-full">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${videoId}`}
-                      title={enrichedFeaturedVideo.title || "Video"}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="font-semibold text-sm truncate">{enrichedFeaturedVideo.title || "Video"}</p>
-                  </div>
-                </motion.div>
-              );
-            }
+          // Type 3: YouTube Player embed
+          if (videoType === 3 && videoId) {
+            return (
+              <motion.div
+                key={video.id || idx}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="overflow-hidden shadow-xl transition-transform"
+                style={videoCardStyle}
+              >
+                <div className="aspect-video w-full">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    title={video.title || "Video"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="font-semibold text-sm truncate">{video.title || "Video"}</p>
+                </div>
+              </motion.div>
+            );
+          }
 
-            // Type 2: Large cover above card
-            if (videoType === 2) {
-              return (
-                <motion.a
-                  href={enrichedFeaturedVideo.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="block relative overflow-hidden shadow-xl transition-transform"
-                  style={videoCardStyle}
-                >
-                  <div className="relative aspect-video w-full">
-                    <img
-                      src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
-                      alt={enrichedFeaturedVideo.title || "Video"}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                        <Play size={28} className="ml-1" style={{ color: theme.cardColor }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
-                    <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
-                      <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
-                      <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
-                    </div>
-                  </div>
-                </motion.a>
-              );
-            }
-
-            // Type 1 (default): Small thumbnail
+          // Type 2: Large cover above card
+          if (videoType === 2) {
             return (
               <motion.a
-                href={enrichedFeaturedVideo.url}
+                key={video.id || idx}
+                href={video.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 initial={{ opacity: 0 }}
@@ -665,27 +625,64 @@ const CreatorProfile = () => {
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 className="block relative overflow-hidden shadow-xl transition-transform"
-                style={{ ...cardStyle, padding: 0 }}
+                style={videoCardStyle}
               >
-                <div className="flex items-center gap-4 p-4">
-                  <div className="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
-                    <img
-                      src={enrichedFeaturedVideo.thumbnail || extractYouTubeThumbnail(enrichedFeaturedVideo.url)}
-                      alt={enrichedFeaturedVideo.title || "Video"}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-base truncate">{enrichedFeaturedVideo.title || "Video"}</p>
-                    <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
-                      <PlatformIcon platform={enrichedFeaturedVideo.platform || "youtube"} size={14} />
-                      <span className="capitalize">{enrichedFeaturedVideo.platform || "youtube"}</span>
+                <div className="relative aspect-video w-full">
+                  <img
+                    src={video.thumbnail || extractYouTubeThumbnail(video.url)}
+                    alt={video.title || "Video"}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                      <Play size={28} className="ml-1" style={{ color: theme.cardColor }} />
                     </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="font-semibold text-base truncate">{video.title || "Video"}</p>
+                  <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
+                    <PlatformIcon platform={video.platform || "youtube"} size={14} />
+                    <span className="capitalize">{video.platform || "youtube"}</span>
                   </div>
                 </div>
               </motion.a>
             );
-          })()}
+          }
+
+          // Type 1 (default): Small thumbnail
+          return (
+            <motion.a
+              key={video.id || idx}
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="block relative overflow-hidden shadow-xl transition-transform"
+              style={{ ...cardStyle, padding: 0 }}
+            >
+              <div className="flex items-center gap-4 p-4">
+                <div className="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                  <img
+                    src={video.thumbnail || extractYouTubeThumbnail(video.url)}
+                    alt={video.title || "Video"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-base truncate">{video.title || "Video"}</p>
+                  <div className="flex items-center gap-1.5 text-sm opacity-70 mt-1">
+                    <PlatformIcon platform={video.platform || "youtube"} size={14} />
+                    <span className="capitalize">{video.platform || "youtube"}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.a>
+          );
+        })}
 
         {/* Regular Links */}
         {enabledLinks.map((link, index) => {

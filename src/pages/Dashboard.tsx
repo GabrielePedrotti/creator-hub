@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Profile, ProfileTheme, ProfileLink, presetThemes } from '@/types/profile';
+import { Profile, ProfileTheme, ProfileLink, FeaturedVideo, presetThemes } from '@/types/profile';
 import ProfilePreview from '@/components/profile/ProfilePreview';
 import ThemeSelector from '@/components/profile/ThemeSelector';
 import LinkEditor from '@/components/profile/LinkEditor';
@@ -36,12 +36,16 @@ const defaultProfile: Profile = {
     { id: '4', title: 'TikTok', url: 'https://tiktok.com/@hemerald', enabled: true, badge: 'NEW' },
     { id: '5', title: 'Discord', url: 'https://discord.gg/hemerald', enabled: true, badge: null },
   ],
-  featuredVideo: {
-    url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
-    title: 'CUPHEAD Ma se supero i 100 BATTITI il GIOCO si...',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    platform: 'youtube',
-  },
+  featuredVideos: [
+    {
+      id: '1',
+      url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+      title: 'CUPHEAD Ma se supero i 100 BATTITI il GIOCO si...',
+      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+      platform: 'youtube',
+      type: 1,
+    },
+  ],
 };
 
 const Dashboard = () => {
@@ -62,8 +66,8 @@ const Dashboard = () => {
     setProfile(prev => ({ ...prev, links }));
   };
 
-  const updateFeaturedVideo = (featuredVideo: Profile['featuredVideo']) => {
-    setProfile(prev => ({ ...prev, featuredVideo }));
+  const updateFeaturedVideos = (featuredVideos: FeaturedVideo[] | undefined) => {
+    setProfile(prev => ({ ...prev, featuredVideos }));
   };
 
   const handleSave = async () => {
@@ -210,8 +214,8 @@ const Dashboard = () => {
 
                 <TabsContent value="video" className="mt-0">
                   <FeaturedVideoEditor 
-                    featuredVideo={profile.featuredVideo}
-                    onVideoChange={updateFeaturedVideo}
+                    featuredVideos={profile.featuredVideos}
+                    onVideosChange={updateFeaturedVideos}
                   />
                 </TabsContent>
 
