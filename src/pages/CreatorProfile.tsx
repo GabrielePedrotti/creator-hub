@@ -59,11 +59,14 @@ interface APIResponse {
   }>;
   featuredVideos?: Array<{
     id?: string;
-    url: string;
+    url?: string;
+    value?: string; // Backend sends video URL as "value"
     title?: string;
     thumbnail?: string;
     platform?: string;
     type?: 1 | 2 | 3;
+    enabled?: boolean;
+    source?: string;
   }>;
 }
 
@@ -100,14 +103,16 @@ const transformAPIResponse = (data: APIResponse): Profile => ({
   })),
   featuredVideos:
     data.featuredVideos && data.featuredVideos.length > 0
-      ? data.featuredVideos.map((fv, idx) => ({
-          id: fv.id || `fv-${idx}`,
-          url: fv.url,
-          title: fv.title || 'Video',
-          thumbnail: fv.thumbnail || '',
-          platform: (fv.platform as 'youtube' | 'twitch' | 'tiktok') || 'youtube',
-          type: (fv as any).type as 1 | 2 | 3 | undefined,
-        }))
+      ? data.featuredVideos
+          .filter((fv) => fv.enabled !== false) // Filter out disabled videos
+          .map((fv, idx) => ({
+            id: fv.id || `fv-${idx}`,
+            url: fv.value || fv.url || '', // Use "value" field, fallback to "url"
+            title: fv.title || 'Video',
+            thumbnail: fv.thumbnail || '',
+            platform: (fv.platform as 'youtube' | 'twitch' | 'tiktok') || 'youtube',
+            type: (fv as any).type as 1 | 2 | 3 | undefined,
+          }))
       : undefined,
 });
 
