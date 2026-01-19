@@ -11,7 +11,7 @@ interface ProfilePreviewProps {
 }
 
 const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) => {
-  const { theme, links, featuredVideo } = profile;
+  const { theme, links, featuredVideos } = profile;
 
   // Extract Twitch usernames from links
   const twitchUsernames = useMemo(() => {
@@ -162,28 +162,29 @@ const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) =
 
         {/* Links */}
         <div className="px-4 space-y-3">
-          {/* Featured Video */}
-          {featuredVideo && (
+          {/* Featured Videos */}
+          {featuredVideos && featuredVideos.map((video, idx) => (
             <motion.div
+              key={video.id}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.3 + idx * 0.05 }}
               className="relative overflow-hidden shadow-lg"
               style={{ ...cardStyle, padding: 0 }}
             >
               <div className="flex items-center gap-3 p-3">
                 <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
                   <img 
-                    src={featuredVideo.thumbnail || extractYouTubeThumbnail(featuredVideo.url)} 
-                    alt={featuredVideo.title}
+                    src={video.thumbnail || extractYouTubeThumbnail(video.url)} 
+                    alt={video.title}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{featuredVideo.title}</p>
+                  <p className="font-medium text-sm truncate">{video.title}</p>
                   <div className="flex items-center gap-1 text-xs opacity-70 mt-0.5">
-                    <PlatformIcon platform={featuredVideo.platform} size={12} />
-                    <span className="capitalize">{featuredVideo.platform}</span>
+                    <PlatformIcon platform={video.platform} size={12} />
+                    <span className="capitalize">{video.platform}</span>
                   </div>
                 </div>
                 <button className="p-1 opacity-50 hover:opacity-100">
@@ -191,7 +192,7 @@ const ProfilePreview = ({ profile, isMobileView = true }: ProfilePreviewProps) =
                 </button>
               </div>
             </motion.div>
-          )}
+          ))}
 
           {/* Regular Links */}
           {enabledLinks.map((link, index) => {
