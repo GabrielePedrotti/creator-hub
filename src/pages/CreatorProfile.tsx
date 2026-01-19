@@ -162,14 +162,14 @@ const CreatorProfile = () => {
 
       const enrichedVideos = await Promise.all(
         videos.map(async (fv) => {
-          if (!fv.url) return fv;
+          if (!fv || !fv.url) return fv;
 
           const needsTitle = !fv.title;
           const needsThumbnail = !fv.thumbnail;
 
           if (!needsTitle && !needsThumbnail) return fv;
 
-          const ytMatch = fv.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          const ytMatch = fv.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
 
           if (!ytMatch) {
             try {
